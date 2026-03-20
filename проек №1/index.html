@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ky">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nomad Elite - Smart Menu</title>
+    <style>
+        :root { --gold: #d4af37; --dark: #121212; --card: #1e1e1e; --text: #ffffff; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--dark); color: var(--text); padding-bottom: 100px; }
+        header { background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=800'); background-size: cover; height: 120px; display: flex; flex-direction: column; justify-content: center; align-items: center; border-bottom: 3px solid var(--gold); text-align: center; }
+        header h1 { margin: 0; font-size: 1.8rem; color: var(--gold); letter-spacing: 2px; }
+        .container { max-width: 600px; margin: 0 auto; padding: 15px; }
+        .category-title { color: var(--gold); margin: 25px 0 10px; font-size: 1.4rem; border-left: 4px solid var(--gold); padding-left: 10px; text-transform: uppercase; }
+        .menu-item { background: var(--card); border-radius: 12px; margin-bottom: 12px; display: flex; align-items: center; padding: 10px; border: 1px solid #333; }
+        .item-img { width: 70px; height: 70px; border-radius: 10px; object-fit: cover; margin-right: 12px; border: 1px solid #444; }
+        .item-info { flex: 1; }
+        .item-info h4 { margin: 0; font-size: 0.95rem; color: var(--gold); }
+        .item-info p { margin: 3px 0 0; font-size: 0.75rem; color: #aaa; }
+        .item-actions { display: flex; align-items: center; gap: 8px; margin-left: 10px; }
+        .price { font-weight: bold; font-size: 1rem; white-space: nowrap; }
+        .add-btn { background: var(--gold); border: none; color: #000; width: 32px; height: 32px; border-radius: 50%; font-size: 1.3rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .cart-panel { position: fixed; bottom: 0; left: 0; right: 0; background: #25d366; color: white; padding: 15px 20px; display: none; justify-content: space-between; align-items: center; z-index: 1000; border-radius: 20px 20px 0 0; box-shadow: 0 -5px 15px rgba(0,0,0,0.5); }
+        .order-btn { background: white; color: #25d366; border: none; padding: 8px 18px; border-radius: 20px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>NOMAD ELITE</h1>
+    <p>Premium Меню</p>
+</header>
+
+<div class="container" id="menu-container">
+    </div>
+
+<div id="cartPanel" class="cart-panel">
+    <div style="font-weight: bold;">Тандалды: <span id="cartTotal">0</span> сом</div>
+    <button class="order-btn" onclick="sendOrder()">Заказ берүү</button>
+</div>
+
+<script>
+    // МЕНЮ ТИЗМЕСИ (Ушул жерге гана жаңы тамактарды кошобуз)
+    const menuData = [
+        { 
+            cat: "Завтраки", 
+            items: [
+                { n: "Каша овсяная с рисом", p: 190, d: "Даамдуу пайдалуу каша", img: "https://images.unsplash.com/photo-1517673132405-a56a62b18caf?w=200" },
+                { n: "Блины", p: 160, d: "творог, сметана, мёд", img: "https://images.unsplash.com/photo-1517673400267-0251440c45dc?w=200" },
+                { n: "Сырники", p: 240, d: "творог, сметана, мёд", img: "https://images.unsplash.com/photo-1598214886806-c87b84b7098b?w=200" },
+                { n: "Омлет с овощами", p: 220, d: "Жаңы жашылчалар менен", img: "https://images.unsplash.com/photo-1525351484163-7529414344d8?w=200" },
+                { n: "Английский завтрак", p: 340, d: "Толук кандуу завтрак", img: "https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=200" }
+            ]
+        }
+        , // Бул үтүр мурунку бөлүм менен жаңы бөлүмдү бөлүп турат
+        { 
+            cat: "Салаты", 
+            items: [
+                { n: "Греческий салат", p: 360, d: "Жаңы жашылчалар жана сыр фета", img: "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=200" },
+                { n: "Цезарь с курицей", p: 390, d: "Тоок эти жана классикалык соус", img: "https://images.unsplash.com/photo-1550304943-4f24f54ddde9?w=200" },
+                { n: "Цезарь с креветками", p: 430, d: "Креветкалар менен", img: "https://images.unsplash.com/photo-1512852939750-1305098529bf?w=200" },
+                { n: "Хрустящие баклажаны", p: 370, d: "Таттуу-ачуу соус менен", img: "https://images.unsplash.com/photo-1623653387945-2fd25214f8fc?w=200" },
+                { n: "Овощной микс", p: 290, d: "Жеңил жашылча салаты", img: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=200" }
+            ]
+        }
+        , // Бул үтүр Салаттар бөлүмү менен Сэндвичтерди бөлүп турат
+        { 
+            cat: "Сэндвичи на гриле", 
+            items: [
+                { n: "Сэндвич с яйцом и сыром", p: 260, d: "Грильде бышкан назик даам", img: "https://images.unsplash.com/photo-1528733918455-5a59687cedf0?w=200" },
+                { n: "Сэндвич с курицей", p: 290, d: "Тоок эти жана атайын соус менен", img: "https://images.unsplash.com/photo-1567234665766-cd125c3821f5?w=200" },
+                { n: "Мраморный сэндвич", p: 340, d: "Мрамор этинен жасалган өзгөчө даам", img: "https://images.unsplash.com/photo-1553909489-cd47e0907980?w=200" },
+                { n: "Сэндвич Стейкчиз", p: 380, d: "Стейк кесимдери жана көп сыр менен", img: "https://images.unsplash.com/photo-1521390188846-e2a3a97453a0?w=200" }
+            ]
+        }
+        , // Бул үтүр Сэндвичтер менен Бургерлерди бөлүп турат
+        { 
+            cat: "Бургеры на гриле", 
+            items: [
+                { n: "Бургер All in с говядиной", p: 340, d: "Ширелүү уй эти жана жашылчалар", img: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=200" },
+                { n: "Бургер All in чикен", p: 310, d: "Тоок этинен жасалган назик котлета", img: "https://images.unsplash.com/photo-1513185158878-8d8c196b01d5?w=200" },
+                { n: "Бургер биф барбекю", p: 360, d: "Барбекю соусу жана гриль даамы", img: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=200" },
+                { n: "Бургер Биг Джайди", p: 370, d: "Чоң жана тойгузуучу бургер", img: "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=200" },
+                { n: "Бургер мраморный с яйцом", p: 395, d: "Мрамор эти жана куурулган жумуртка", img: "https://images.unsplash.com/photo-1596662951482-0c4ba74a6df6?w=200" }
+            ]
+        }
+        , // Бул үтүр Бургерлер менен Хот-догдорду бөлүп турат
+        { 
+            cat: "Хот-доги", 
+            items: [
+                { n: "Мексиканский хот-дог", p: 230, d: "Ачуу соус жана халапеньо менен", img: "https://images.unsplash.com/photo-1612392062631-94dd858cba88?w=200" },
+                { n: "Азиатский хот-дог", p: 230, d: "Өзгөчө азиялык татымалдар менен", img: "https://images.unsplash.com/photo-1541214113241-21578d2d9b62?w=200" },
+                { n: "Чикен чиз хот-дог", p: 250, d: "Тоок сосискасы жана эриген сыр", img: "https://images.unsplash.com/photo-1599599810694-b5b37304c041?w=200" }
+            ]
+        }
+        , // Бул үтүр Хот-догдор менен Пиццаны бөлүп турат
+        { 
+            cat: "Пицца", 
+            items: [
+                { n: "Пепперони", p: 500, d: "Ачуу колбаса жана моцарелла сыры", img: "https://images.unsplash.com/photo-1628840042765-356cda07504e?w=200" },
+                { n: "4 сыра", p: 590, d: "Төрт түрдүү сырдын өзгөчө айкалышы", img: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=200" },
+                { n: "Маргарита", p: 390, d: "Классикалык томат соусу жана сыр", img: "https://images.unsplash.com/photo-1574071318508-1cdbad80ad50?w=200" },
+                { n: "Чикен чиз", p: 520, d: "Тоок эти жана жумшак сыр менен", img: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=200" }
+            ]
+        }
+        , // Бул үтүр Пицца менен Шаурманы бөлүп турат
+        { 
+            cat: "Шаурма", 
+            items: [
+                { n: "Шаурма с курицей", p: 290, d: "Ширелүү тоок эти, жаңы жашылчалар жана атайын соус", img: "https://images.unsplash.com/photo-1561651823-34feb02250e4?w=200" }
+            ]
+        }
+        , // Эта запятая разделяет Шаурму и Супы
+        { 
+            cat: "Супы", 
+            items: [
+                { n: "Том ям с морепродуктами", p: 590, d: "Классический тайский остро-кислый суп", img: "https://images.unsplash.com/photo-1547592166-83ac45744acd?w=200" },
+                { n: "Чечевичный суп", p: 290, d: "Питательный крем-суп из чечевицы", img: "https://images.unsplash.com/photo-1547592115-8d747a1c6239?w=200" },
+                { n: "Куриный суп", p: 290, d: "Легкий домашний суп с лапшой", img: "https://images.unsplash.com/photo-1547592166-83ac45744acd?w=200" },
+                { n: "Рамен с курицей", p: 420, d: "Плотный бульон с лапшой и яйцом", img: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=200" },
+                { n: "Чан рамен с говядиной", p: 390, d: "Острый рамен с сочной говядиной", img: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=200" },
+                { n: "Суп чучвара", p: 350, d: "Традиционный суп с маленькими пельменями", img: "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=200" },
+                { n: "Суп мастава", p: 350, d: "Сытный узбекский рисовый суп", img: "https://images.unsplash.com/photo-1547592166-83ac45744acd?w=200" }
+            ]
+        }
+        , // Разделяет Супы и Вок
+        { 
+            cat: "WOK", 
+            items: [
+                { n: "Удон с курицей", p: 360, d: "Пшеничная лапша с овощами и курицей в соусе", img: "https://images.unsplash.com/photo-1585032226651-759b368d7246?w=200" },
+                { n: "Рамен с говядиной", p: 390, d: "Жареная лапша с сочной говядиной", img: "https://images.unsplash.com/photo-1552611052-33e04de081de?w=200" },
+                { n: "Яки соба с морепродуктами", p: 460, d: "Гречневая лапша с миксом из морепродуктов", img: "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=200" },
+                { n: "Рис с овощами", p: 290, d: "Обжаренный рис с миксом свежих овощей", img: "https://images.unsplash.com/photo-1512058560366-cd2427ff06bd?w=200" }
+            ]
+        }
+        , // Разделяет WOK и Закуски
+        { 
+            cat: "Закуски", 
+            items: [
+                { n: "Картошка фри", p: 140, d: "Золотистый и хрустящий картофель", img: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=200" },
+                { n: "Гренки с чесноком", p: 140, d: "Ароматные сухарики из черного хлеба", img: "https://images.unsplash.com/photo-1600271886395-d2270979e2c6?w=200" },
+                { n: "Куриные крылышки", p: 310, d: "Хрустящие крылышки в панировке", img: "https://images.unsplash.com/photo-1527477396000-e27163b481c2?w=200" },
+                { n: "Наггетсы", p: 250, d: "Нежное куриное филе в панировке", img: "https://images.unsplash.com/photo-1562967914-608f82629710?w=200" }
+            ]
+        }
+        , // Разделяет Закуски и Горячие блюда
+        { 
+            cat: "Горячие блюда", 
+            items: [
+                { n: "Медальоны из говядины", p: 890, d: "Нежная вырезка с гарниром", img: "https://images.unsplash.com/photo-1558030006-450675393462?w=200" },
+                { n: "Бифштекс с пюре", p: 330, d: "Классический бифштекс и нежное пюре", img: "https://images.unsplash.com/photo-1544025162-d76694265947?w=200" },
+                { n: "Курица по-тайски", p: 360, d: "Пикантная курочка в азиатском стиле", img: "https://images.unsplash.com/photo-1562607311-477610010996?w=200" },
+                { n: "Фетучини с курицей", p: 490, d: "Паста со сливочным соусом и грибами", img: "https://images.unsplash.com/photo-1645112481338-3162788e29a3?w=200" },
+                { n: "Фетучини с форелью", p: 510, d: "Изысканная паста с кусочками форели", img: "https://images.unsplash.com/photo-1473093226795-af9932fe5856?w=200" },
+                { n: "Куурдак", p: 510, d: "Традиционное жареное мясо с картофелем", img: "https://images.unsplash.com/photo-1603360946369-dc9bb6258143?w=200" },
+                { n: "Куриная грудка гриль", p: 400, d: "Диетическая грудка с овощами", img: "https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=200" }
+            ]
+        }
+       , 
+        { 
+            cat: "Чай", 
+            items: [
+                { n: "Чай черный (350мл)", p: 90, d: "Классикалык кара чай", img: "https://images.unsplash.com/photo-1544787210-2827255cdd6b?w=200" },
+                { n: "Чай черный (750мл)", p: 220, d: "Чоң чайнекте", img: "https://images.unsplash.com/photo-1544787210-2827255cdd6b?w=200" },
+                { n: "Чай зеленый (350мл)", p: 90, d: "Пайдалуу жашыл чай", img: "https://images.unsplash.com/photo-1627435601361-ec25f5b1d0e5?w=200" },
+                { n: "Чай зеленый (750мл)", p: 220, d: "Чоң чайнекте", img: "https://images.unsplash.com/photo-1627435601361-ec25f5b1d0e5?w=200" },
+                { n: "Масала индийский (350мл)", p: 180, d: "Сүт жана татымалдар менен", img: "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=200" },
+                { n: "Масала индийский (750мл)", p: 340, d: "Индия чай маданияты", img: "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=200" },
+                { n: "Облепиховый чай (350мл)", p: 190, d: "Жаңы облепиха жана бал менен", img: "https://images.unsplash.com/photo-1576092762791-dd9e2220abd1?w=200" },
+                { n: "Облепиховый чай (750мл)", p: 340, d: "Иммунитетти көтөрөт", img: "https://images.unsplash.com/photo-1576092762791-dd9e2220abd1?w=200" },
+                { n: "Вишнёвый с мятой (350мл)", p: 190, d: "Сергитүүчү вишня жана мята", img: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=200" },
+                { n: "Вишнёвый с мятой (750мл)", p: 340, d: "Мята жана вишня", img: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=200" },
+                { n: "Имбирный с медом (350мл)", p: 190, d: "Жылытуучу жана пайдалуу", img: "https://images.unsplash.com/photo-1514733670139-4d87a19b1773?w=200" },
+                { n: "Имбирный с медом (750мл)", p: 340, d: "Бал жана имбирь", img: "https://images.unsplash.com/photo-1514733670139-4d87a19b1773?w=200" },
+                { n: "Марокканский чай (350мл)", p: 200, d: "Татымалдардын өзгөчө даамы", img: "https://images.unsplash.com/photo-1610450949065-2f225752946c?w=200" },
+                { n: "Марокканский чай (750мл)", p: 360, d: "Специялар менен", img: "https://images.unsplash.com/photo-1610450949065-2f225752946c?w=200" },
+                { n: "Малиновый с розмарином (350мл)", p: 200, d: "Малина жана розмариндин жыты", img: "https://images.unsplash.com/photo-1576092762791-dd9e2220abd1?w=200" },
+                { n: "Малиновый с розмарином (750мл)", p: 370, d: "Розмариндин жыты менен", img: "https://images.unsplash.com/photo-1576092762791-dd9e2220abd1?w=200" },
+                { n: "Ягодный рай (350мл)", p: 210, d: "Токой мөмөлөрүнүн микси", img: "https://images.unsplash.com/photo-1594631252845-29fc4cc8cde9?w=200" },
+                { n: "Ягодный рай (750мл)", p: 370, d: "Микс ягоды", img: "https://images.unsplash.com/photo-1594631252845-29fc4cc8cde9?w=200" }
+            ]
+        }
+        , // Кофе бөлүмү
+        { 
+            cat: "Кофе классика", 
+            items: [
+                { n: "Эспрессо (60мл)", p: 130, d: "Күчтүү классикалык кофе", img: "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=200" },
+                { n: "Американо (250мл)", p: 160, d: "Классикалык американо", img: "https://images.unsplash.com/photo-1551030173-122adbb8158a?w=200" },
+                { n: "Американо (350мл)", p: 200, d: "Чоң американо", img: "https://images.unsplash.com/photo-1551030173-122adbb8158a?w=200" },
+                { n: "Капучино (250мл)", p: 180, d: "Жумшак көбүк менен", img: "https://images.unsplash.com/photo-1534706936160-d5ee67737249?w=200" },
+                { n: "Капучино (350мл)", p: 230, d: "Орточо капучино", img: "https://images.unsplash.com/photo-1534706936160-d5ee67737249?w=200" },
+                { n: "Капучино (400мл)", p: 270, d: "Чоң капучино", img: "https://images.unsplash.com/photo-1534706936160-d5ee67737249?w=200" },
+                { n: "Латте (350мл)", p: 230, d: "Назик сүт даамы", img: "https://images.unsplash.com/photo-1593967858208-67ddb5b4c426?w=200" },
+                { n: "Латте (400мл)", p: 270, d: "Чоң латте", img: "https://images.unsplash.com/photo-1593967858208-67ddb5b4c426?w=200" },
+                { n: "Флэт уайт (250мл)", p: 240, d: "Кофенин даамы даана сезилет", img: "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=200" },
+                { n: "Кофе Гляссе (350мл)", p: 280, d: "Мороженое кошулган кофе", img: "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=200" },
+                { n: "Раф классический (350мл)", p: 280, d: "Сливочный даам", img: "https://images.unsplash.com/photo-1593967858208-67ddb5b4c426?w=200" },
+                { n: "Раф классический (450мл)", p: 310, d: "Чоң раф", img: "https://images.unsplash.com/photo-1593967858208-67ddb5b4c426?w=200" }
+            ]
+        }
+        , // Раздел Авторские напитки
+        { 
+            cat: "Авторские напитки", 
+            items: [
+                { n: "Кофе малиновый Джайди (350мл)", p: 290, d: "Фирменный вкус с малиной", img: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=200" },
+                { n: "Кофе сникерс (350мл)", p: 270, d: "Орехово-карамельный вкус", img: "https://images.unsplash.com/photo-1559496417-e7f25cb247f3?w=200" },
+                { n: "Какао с маршмеллоу (350мл)", p: 270, d: "Уютный и сладкий напиток", img: "https://images.unsplash.com/photo-1544787210-2827255cdd6b?w=200" },
+                { n: "Матча классический (350мл)", p: 260, d: "Японский чай матча на молоке", img: "https://images.unsplash.com/photo-1515823064-d6e0c04616a7?w=200" },
+                { n: "Матча кокосовый (350мл)", p: 260, d: "Матча на кокосовом молоке", img: "https://images.unsplash.com/photo-1515823064-d6e0c04616a7?w=200" },
+                { n: "Матча миндальный (350мл)", p: 260, d: "Матча на миндальном молоке", img: "https://images.unsplash.com/photo-1515823064-d6e0c04616a7?w=200" },
+                { n: "Матча банановый (350мл)", p: 260, d: "Матча с нежным банановым вкусом", img: "https://images.unsplash.com/photo-1515823064-d6e0c04616a7?w=200" }
+            ]
+        }
+        , // Кофейные напитки бөлүмү
+        { 
+            cat: "Кофейные напитки", 
+            items: [
+                { n: "Раф цитрусовый (350мл)", p: 280, d: "Цитрус даамы менен", img: "https://images.unsplash.com/photo-1593967858208-67ddb5b4c426?w=200" },
+                { n: "Раф цитрусовый (450мл)", p: 310, d: "Чоң цитрус раф", img: "https://images.unsplash.com/photo-1593967858208-67ddb5b4c426?w=200" },
+                { n: "Раф лавандовый (350мл)", p: 280, d: "Назик лаванда жыты", img: "https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=200" },
+                { n: "Раф лавандовый (450мл)", p: 310, d: "Чоң лаванда раф", img: "https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=200" },
+                { n: "Раф с халвой (350мл)", p: 280, d: "Өзгөчө халва даамы", img: "https://images.unsplash.com/photo-1593967858208-67ddb5b4c426?w=200" },
+                { n: "Раф с халвой (450мл)", p: 310, d: "Чоң халва раф", img: "https://images.unsplash.com/photo-1593967858208-67ddb5b4c426?w=200" },
+                { n: "Латте имбирный пряник (350мл)", p: 270, d: "Пряник даамы менен", img: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=200" },
+                { n: "Латте имбирный пряник (450мл)", p: 290, d: "Чоң имбирь латте", img: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=200" },
+                { n: "Капучино иммунитет (350мл)", p: 230, d: "Пайдалуу капучино", img: "https://images.unsplash.com/photo-1534706936160-d5ee67737249?w=200" },
+                { n: "Капучино иммунитет (450мл)", p: 280, d: "Чоң капучино", img: "https://images.unsplash.com/photo-1534706936160-d5ee67737249?w=200" },
+                { n: "Тыквенный латте (350мл)", p: 270, d: "Ашкабактын даамы менен", img: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=200" },
+                { n: "Тыквенный латте (450мл)", p: 290, d: "Чоң тыквенный латте", img: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=200" }
+            ]
+        }
+        , // Холодный кофе бөлүмү
+        { 
+            cat: "Холодный кофе", 
+            items: [
+                { n: "Айс латте (350мл)", p: 230, d: "Муздак сүт жана кофе", img: "https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?w=200" },
+                { n: "Айс Бамбл (350мл)", p: 250, d: "Кофе жана апельсин ширеси", img: "https://images.unsplash.com/photo-1553909489-cd47e0907980?w=200" },
+                { n: "Эспрессо тоник (350мл)", p: 220, d: "Сергитүүчү тоник жана кофе", img: "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=200" },
+                { n: "Айс Раф соленая карамель (350мл)", p: 260, d: "Туздуу карамель даамы менен", img: "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=200" }
+            ]
+        },
+        // Доп (Кошумчалар) бөлүмү
+        { 
+            cat: "Доп (Кошумчалар)", 
+            items: [
+                { n: "Сироп (ар кандай)", p: 30, d: "Суусундукка даам берүүчү", img: "https://images.unsplash.com/photo-1589733901241-5d5d9b688321?w=200" },
+                { n: "Альтернативное молоко", p: 60, d: "Кокос, бадам же сулуу сүтү", img: "https://images.unsplash.com/photo-1550583724-125581cc2586?w=200" }
+            ]
+        },
+        // Напитки бөлүмү
+        { 
+            cat: "Напитки", 
+            items: [
+                { n: "Кока кола (250мл)", p: 200, d: "Классикалык суусундук", img: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=200" },
+                { n: "Спрайт (330мл)", p: 200, d: "Лайм жана лимон даамы", img: "https://images.unsplash.com/photo-1625772290748-39126cdd9fe9?w=200" },
+                { n: "Фанта (330мл)", p: 200, d: "Апельсин даамы", img: "https://images.unsplash.com/photo-1624517452488-04869289c4ca?w=200" },
+                { n: "Швепс (330мл)", p: 200, d: "Сергитүүчү тоник", img: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=200" },
+                { n: "Вода AquaMinerale (500мл)", p: 90, d: "Газдалган же газдалбаган", img: "https://images.unsplash.com/photo-1560023907-5f339d61e3c7?w=200" }
+            ]
+        }
+        , // Милкшейктер бөлүмү
+        { 
+            cat: "Милк шейк", 
+            items: [
+                { n: "Шоколадный милкшейк (200мл)", p: 270, d: "Классикалык шоколад даамы", img: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=200" },
+                { n: "Клубничный милкшейк (200мл)", p: 320, d: "Таттуу кулпунай жана каймак", img: "https://images.unsplash.com/photo-1543362906-acfc16c67564?w=200" },
+                { n: "Ванильный милкшейк (200мл)", p: 320, d: "Назик ваниль даамы", img: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=200" },
+                { n: "Фисташковый милкшейк (200мл)", p: 340, d: "Чыныгы фисташка даамы", img: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=200" },
+                { n: "Банановый милкшейк (300мл)", p: 370, d: "Жаңы банан кошулган", img: "https://images.unsplash.com/photo-1553177595-4de2bb0842b9?w=200" }
+            ]
+        },
+        // Лимонаддар бөлүмү
+        { 
+            cat: "Лимонады", 
+            items: [
+                { n: "Цитрус лимонад (350мл)", p: 290, d: "Жаңы цитрус микси", img: "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=200" },
+                { n: "Цитрус лимонад (900мл)", p: 410, d: "Чоң графинде", img: "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=200" },
+                { n: "Манго маракуйя (350мл)", p: 290, d: "Тропикалык даам", img: "https://images.unsplash.com/photo-1540224769541-7e6e20a42330?w=200" },
+                { n: "Манго маракуйя (900мл)", p: 410, d: "Чоң графинде", img: "https://images.unsplash.com/photo-1540224769541-7e6e20a42330?w=200" },
+                { n: "Ягодный лимонад (350мл)", p: 290, d: "Токой мөмөлөрү менен", img: "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=200" },
+                { n: "Ягодный лимонад (900мл)", p: 410, d: "Чоң графинде", img: "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=200" },
+                { n: "Мохито классика (300мл)", p: 290, d: "Лайм жана мята", img: "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=200" },
+                { n: "Мохито классика (900мл)", p: 410, d: "Чоң графинде", img: "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=200" },
+                { n: "Мохито с розмарином (350мл)", p: 290, d: "Өзгөчө розмарин жыты", img: "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=200" },
+                { n: "Мохито с розмарином (900мл)", p: 410, d: "Чоң графинде", img: "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=200" }
+            ]
+        },
+        // Соктор бөлүмү
+        { 
+            cat: "Соки натуральные", 
+            items: [
+                { n: "Сок Апельсин (250мл)", p: 120, d: "Стакан менен", img: "https://images.unsplash.com/photo-1613478223719-2ab802602423?w=200" },
+                { n: "Сок Апельсин (1000мл)", p: 250, d: "Литровый упаковка", img: "https://images.unsplash.com/photo-1613478223719-2ab802602423?w=200" },
+                { n: "Сок Вишня (250мл)", p: 120, d: "Стакан менен", img: "https://images.unsplash.com/photo-1534720843360-9366113b3420?w=200" },
+                { n: "Сок Вишня (1000мл)", p: 250, d: "Литровый упаковка", img: "https://images.unsplash.com/photo-1534720843360-9366113b3420?w=200" },
+                { n: "Сок Яблоко (250мл)", p: 120, d: "Стакан менен", img: "https://images.unsplash.com/photo-1567306226416-28f0efdc88ce?w=200" },
+                { n: "Сок Яблоко (1000мл)", p: 250, d: "Литровый упаковка", img: "https://images.unsplash.com/photo-1567306226416-28f0efdc88ce?w=200" },
+                { n: "Щербет из каркаде (250мл)", p: 100, d: "Сергитүүчү суусундук", img: "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=200" },
+                { n: "Щербет из каркаде (1000мл)", p: 240, d: "Литровый графин", img: "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=200" }
+            ]
+        }
+        , // Горячие коктейли бөлүмү
+        { 
+            cat: "Горячие коктейли", 
+            items: [
+                { n: "Глинтвейн красный (350мл)", p: 390, d: "Жылытуучу кызыл вино жана татымалдар", img: "https://images.unsplash.com/photo-1543157145-f78c636d023d?w=200" },
+                { n: "Глинтвейн белый (350мл)", p: 390, d: "Ак винонун негизиндеги назик даам", img: "https://images.unsplash.com/photo-1543157145-f78c636d023d?w=200" },
+                { n: "Грог пряный (350мл)", p: 380, d: "Күчтүү жана татымалдуу жылытуучу суусундук", img: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=200" }
+            ]
+        },
+        // Пиво (Бөтөлкөдөгү) бөлүмү
+        { 
+            cat: "Пиво", 
+            items: [
+                { n: "Корона экстра (350мл)", p: 300, d: "Лайм менен берилет", img: "https://images.unsplash.com/photo-1597075095403-12502330a8f8?w=200" },
+                { n: "Хайнекен (300мл)", p: 270, d: "Кичине бөтөлкө", img: "https://images.unsplash.com/photo-1618885472179-5e474019f2a9?w=200" },
+                { n: "Хайнекен (500мл)", p: 360, d: "Чоң бөтөлкө", img: "https://images.unsplash.com/photo-1618885472179-5e474019f2a9?w=200" },
+                { n: "Бад (500мл)", p: 310, d: "Классикалык лагер", img: "https://images.unsplash.com/photo-1558644321-99ec423cc811?w=200" },
+                { n: "Хугарден нефильтрованное (500мл)", p: 330, d: "Буудай пивосу", img: "https://images.unsplash.com/photo-1571613316887-6f8d5cbf7ef7?w=200" },
+                { n: "Стелла Артуа (500мл)", p: 290, d: "Бельгиялык лагер", img: "https://images.unsplash.com/photo-1608270586620-248524c67de9?w=200" }
+            ]
+        },
+        // Разливное пиво 
+        { 
+            cat: "Разливное пиво", 
+            items: [
+                { n: "Чешское светлое (500мл)", p: 280, d: "Бокалдагы жаңы пиво", img: "https://images.unsplash.com/photo-1532634710-18408f060799?w=200" },
+                { n: "Бархатное темное (500мл)", p: 290, d: "Жумшак кара пиво", img: "https://images.unsplash.com/photo-1532634710-18408f060799?w=200" }
+            ]
+        }
+    ];
+
+    let cart = [];
+    let total = 0;
+
+    function render() {
+        const cont = document.getElementById('menu-container');
+        cont.innerHTML = "";
+        menuData.forEach(s => {
+            cont.innerHTML += `<div class="category-title">${s.cat}</div>`;
+            s.items.forEach(i => {
+                cont.innerHTML += `
+                    <div class="menu-item">
+                        <img src="${i.img}" class="item-img" onerror="this.src='https://via.placeholder.com/70?text=Food'">
+                        <div class="item-info"><h4>${i.n}</h4><p>${i.d}</p></div>
+                        <div class="item-actions">
+                            <span class="price">${i.p} с</span>
+                            <button class="add-btn" onclick="add('${i.n}',${i.p})">+</button>
+                        </div>
+                    </div>`;
+            });
+        });
+    }
+
+    function add(n, p) {
+        cart.push({n, p});
+        total += p;
+        document.getElementById('cartPanel').style.display = 'flex';
+        document.getElementById('cartTotal').innerText = total;
+    }
+
+    function sendOrder() {
+        let text = "Саламатсызбы! Заказ:%0A";
+        cart.forEach((x, index) => text += `${index + 1}. ${x.n} - ${x.p}с%0A`);
+        text += "%0AЖалпы: " + total + " сом";
+        window.location.href = "https://wa.me/996704885882?text=" + text;
+    }
+
+    render();
+</script>
+</body>
+</html>
