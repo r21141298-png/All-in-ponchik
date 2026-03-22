@@ -372,7 +372,7 @@ function sendOrder() {
     cart.forEach((x, index) => {
         text += `${index + 1}. ${x.n} - ${x.p} сом%0A`;
     });
-    text += `%0A*Жалпы: ${total} сом*`;
+    text += `%0A*общая сумма: ${total} сом*`;
 
     window.location.href = "https://wa.me/996755665577?text=" + text;
 }
